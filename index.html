@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VVC বাকি হিসাব</title>
+  <link rel="icon" href="https://vvcoffice.netlify.app/img/icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#f0f2f5;--sf:#fff;
+      --p:#2563eb;--pd:#1d4ed8;--pl:#dbeafe;--pg:rgba(37,99,235,.15);
+      --ok:#059669;--okl:#d1fae5;
+      --er:#dc2626;--erl:#fee2e2;
+      --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
+      --g400:#9ca3af;--g500:#6b7280;--g600:#4b5563;--g700:#374151;
+      --g800:#1f2937;--g900:#111827;
+      --sw:260px;--r:14px;--rs:10px;
+      --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+      --shm:0 4px 12px rgba(0,0,0,.08);
+      --shl:0 12px 32px rgba(0,0,0,.12);
+      --tr:.2s cubic-bezier(.4,0,.2,1);
+    }
+    body{font-family:'Noto Sans Bengali',system-ui,sans-serif;background:var(--bg);color:var(--g800);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    .h{display:none!important}
+
+    .logo-img{width:40px;height:40px;border-radius:10px;object-fit:cover}
+    .logo-img-sm{width:32px;height:32px;border-radius:8px;object-fit:cover}
+    .logo-img-lg{width:72px;height:72px;border-radius:20px;object-fit:cover;box-shadow:0 8px 24px rgba(37,99,235,.3)}
+
+    .lw{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5000;gap:20px}
+    .lds{display:flex;gap:6px}
+    .lds span{width:14px;height:14px;border-radius:50%;background:#60a5fa;animation:ldBounce .6s ease-in-out infinite alternate}
+    .lds span:nth-child(2){animation-delay:.15s;background:#3b82f6}
+    .lds span:nth-child(3){animation-delay:.3s;background:#2563eb}
+    @keyframes ldBounce{to{transform:translateY(-18px);opacity:.4}}
+    .lw-text{color:#fff;font-size:15px;font-weight:600;letter-spacing:.3px}
+
+    .lp{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px;position:relative;overflow:hidden}
+    .lp::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(37,99,235,.06),transparent 70%);top:-200px;right:-200px;border-radius:50%}
+    .lp::after{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(37,99,235,.04),transparent 70%);bottom:-100px;left:-100px;border-radius:50%}
+    .lc{background:var(--sf);padding:48px 40px;border-radius:24px;box-shadow:var(--shl);width:100%;max-width:400px;text-align:center;position:relative;z-index:1;animation:su .5s ease}
+    @keyframes su{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    .li{width:72px;height:72px;background:linear-gradient(135deg,var(--p),#3b82f6);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;overflow:hidden}
+    .lc h1{font-size:26px;font-weight:700;color:var(--g900);margin-bottom:4px}
+    .lc .sub{color:var(--g400);font-size:13px;margin-bottom:32px}
+    .fi{position:relative;margin-bottom:14px}
+    .fi i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--g400);font-size:15px;pointer-events:none}
+    .fi input{width:100%;padding:13px 16px 13px 46px;border:2px solid var(--g200);border-radius:12px;font-size:14px;font-family:inherit;background:var(--g50);transition:var(--tr)}
+    .fi input:focus{outline:none;border-color:var(--p);background:#fff;box-shadow:0 0 0 3px var(--pg)}
+    .er{color:var(--er);font-size:13px;margin-top:10px;min-height:18px}
+
+    .b{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 22px;border:none;border-radius:var(--rs);font-size:14px;font-family:inherit;font-weight:600;cursor:pointer;transition:var(--tr);text-decoration:none;position:relative}
+    .b:disabled{opacity:.55;cursor:not-allowed;pointer-events:none}
+    .bp{background:var(--p);color:#fff}
+    .bp:hover:not(:disabled){background:var(--pd);box-shadow:var(--shm);transform:translateY(-1px)}
+    .bs{background:var(--g100);color:var(--g700)}.bs:hover:not(:disabled){background:var(--g200)}
+    .bd{background:var(--er);color:#fff}.bd:hover:not(:disabled){background:#b91c1c}
+    .b-sm{padding:7px 14px;font-size:12px;border-radius:8px}
+    .bf{width:100%}.bl{padding:15px 28px;font-size:15px;border-radius:14px}
+    .b.loading{color:transparent!important;pointer-events:none}
+    .b.loading::after{content:'';position:absolute;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    .app{display:flex;min-height:100vh}
+
+    .sb{width:var(--sw);background:linear-gradient(180deg,#0f172a,#1e293b);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .3s ease}
+    .sh{padding:22px 20px;display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08)}
+    .sn{list-style:none;padding:14px 10px;flex:1}
+    .sn li{padding:11px 16px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:rgba(255,255,255,.6);transition:var(--tr);margin-bottom:2px}
+    .sn li:hover{background:rgba(255,255,255,.08);color:#fff}
+    .sn li.ac{background:var(--p);color:#fff}
+    .sn li i{width:22px;text-align:center;font-size:16px}
+    .sf{padding:14px 16px;border-top:1px solid rgba(255,255,255,.08)}
+    .blg{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);width:100%;border-radius:10px}
+    .blg:hover{background:rgba(255,255,255,.12);color:#fff}
+
+    .mh{display:none;position:fixed;top:0;left:0;right:0;height:54px;background:#007DFF;color:#fff;align-items:center;justify-content:space-between;padding:0 16px;z-index:150}
+    .mh button{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:8px}
+    .mh-center{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px}
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:190}
+
+    .ct{margin-left:var(--sw);flex:1;padding:32px;min-height:100vh;overflow-x:hidden}
+    .pg{display:none;animation:fi .3s ease}.pg.ac{display:block}
+    @keyframes fi{from{opacity:0}to{opacity:1}}
+    .ph{margin-bottom:24px}.ph h2{font-size:22px;font-weight:700;color:var(--g900);display:flex;align-items:center;gap:10px}
+    .ph h2 i{color:var(--p)}
+
+    .cd{background:var(--sf);border-radius:var(--r);padding:24px;box-shadow:var(--sh);margin-bottom:20px}
+    .cd h3{font-size:15px;font-weight:600;color:var(--g700);margin-bottom:14px}
+
+    .sl,.ip{width:100%;padding:12px 16px;border:2px solid var(--g200);border-radius:var(--rs);font-size:14px;font-family:inherit;background:#fff;transition:var(--tr);margin-bottom:12px}
+    .sl:focus,.ip:focus{outline:none;border-color:var(--p);box-shadow:0 0 0 3px var(--pg)}
+    .sl{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+    .sl.has-val{border-color:var(--ok);background-color:#f0fdf4}
+    .lb{display:block;font-size:13px;font-weight:600;color:var(--g600);margin-bottom:6px}
+    .rw{display:flex;gap:12px;align-items:flex-end}.rw .fw{flex:1}
+
+    .pv{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #bfdbfe;border-radius:14px;padding:20px;margin:20px 0}
+    .pr{display:flex;justify-content:space-between;padding:5px 0;font-size:14px;color:var(--g600)}
+    .pr.tt{border-top:2px solid #93c5fd;margin-top:8px;padding-top:12px;font-size:22px;font-weight:700;color:var(--p)}
+
+    .sts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px}
+    .st{background:var(--sf);border-radius:var(--r);padding:22px;box-shadow:var(--sh);display:flex;align-items:center;gap:16px}
+    .si{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px}
+    .st.du .si{background:var(--erl);color:var(--er)}.st.or .si{background:var(--pl);color:var(--p)}
+    .slb{font-size:12px;color:var(--g400);display:block;margin-bottom:2px}
+    .sv{font-size:22px;font-weight:700;color:var(--g900)}
+
+    .tbs{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;flex-wrap:wrap;-webkit-overflow-scrolling:touch}
+    .tbs::-webkit-scrollbar{height:4px}
+    .tbs::-webkit-scrollbar-thumb{background:var(--g300);border-radius:4px}
+    .tb{padding:9px 18px;border:2px solid var(--g200);border-radius:10px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;font-weight:500;color:var(--g500);transition:var(--tr);white-space:nowrap}
+    .tb:hover{border-color:var(--p);color:var(--p)}.tb.ac{background:var(--p);border-color:var(--p);color:#fff}
+
+    .ft{display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+    .ft .sl{width:auto;min-width:160px;margin-bottom:0}.ft .ip{width:auto;margin-bottom:0}
+    .dr{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--g500)}
+
+    .sm-t{font-size:15px;font-weight:600;color:var(--g700);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .sm-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:24px}
+    .sm-c{background:var(--sf);border-radius:var(--rs);padding:14px 16px;box-shadow:var(--sh);border-left:4px solid var(--p)}
+    .sm-c .sn2{font-size:13px;font-weight:600;color:var(--g800);margin-bottom:6px}
+    .sm-c .sd2{display:flex;justify-content:space-between;font-size:12px;color:var(--g400)}
+    .sm-c .sd2 .am{font-weight:700;color:var(--p)}
+
+    .tw{background:var(--sf);border-radius:var(--r);padding:24px;box-shadow:var(--sh)}
+    .tw h3{font-size:15px;font-weight:600;color:var(--g700);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .ts{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .ts::-webkit-scrollbar{height:6px}
+    .ts::-webkit-scrollbar-thumb{background:var(--g300);border-radius:4px}
+    .ts::-webkit-scrollbar-track{background:var(--g100);border-radius:4px}
+    .tb2{width:100%;border-collapse:collapse;min-width:600px}
+    .tb2 th{background:var(--g50);padding:11px 14px;text-align:left;font-size:12px;font-weight:600;color:var(--g500);border-bottom:2px solid var(--g200);white-space:nowrap;text-transform:uppercase;letter-spacing:.3px}
+    .tb2 td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--g100);color:var(--g700);white-space:nowrap}
+    .tb2 tr:hover td{background:var(--g50)}
+    .tb2 .ac2{display:flex;gap:6px}
+    .em{text-align:center;padding:40px 20px;color:var(--g400)}
+    .em i{font-size:40px;margin-bottom:12px;display:block}.em p{font-size:15px}
+
+    .off-badge{display:inline-flex;align-items:center;padding:3px 10px;background:var(--pl);color:var(--p);border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+
+    .mbg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:3000;padding:20px;backdrop-filter:blur(4px)}
+    .md{background:var(--sf);border-radius:20px;width:100%;max-width:460px;box-shadow:0 32px 64px rgba(0,0,0,.2);animation:mi .25s ease}
+    @keyframes mi{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .mh2{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--g200)}
+    .mh2 h3{font-size:17px;color:var(--g900)}
+    .mc{background:none;border:none;font-size:22px;cursor:pointer;color:var(--g400);padding:4px;line-height:1}
+    .mc:hover{color:var(--g700)}
+    .mb{padding:22px}.mb .ip{margin-bottom:14px}
+    .mf{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid var(--g200)}
+
+    .tst{position:fixed;top:24px;right:24px;padding:14px 24px;border-radius:12px;color:#fff;font-size:13px;font-weight:600;z-index:4000;box-shadow:var(--shl);animation:ti .35s ease;display:flex;align-items:center;gap:10px;max-width:380px}
+    .tst.ok{background:var(--ok)}.tst.er{background:var(--er)}
+    .tst i{font-size:16px;flex-shrink:0}
+    @keyframes ti{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+    @media(max-width:768px){
+      .sb{transform:translateX(-100%)}.sb.op{transform:translateX(0)}
+      .mh{display:flex}
+      .ct{margin-left:0;padding:68px 14px 20px;overflow-x:hidden}
+      .rw{flex-direction:column}
+      .ft{flex-direction:column;align-items:stretch}.ft .sl{width:100%;min-width:auto}
+      .dr{flex-wrap:wrap}
+      .sts{grid-template-columns:1fr}
+      .sm-g{grid-template-columns:1fr 1fr}
+      .tb2 th,.tb2 td{padding:8px 10px;font-size:12px}
+      .tst{left:16px;right:16px;max-width:none}
+      .pv{padding:14px}
+      .pr{font-size:13px}
+      .pr.tt{font-size:18px}
+      .cd{padding:18px}
+      .tw{padding:18px}
+      .ph h2{font-size:18px}
+      .st{padding:16px}
+      .sv{font-size:18px}
+      .si{width:44px;height:44px;font-size:18px}
+      .sm-c{padding:12px}
+      .tbs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+    }
+    @media(max-width:480px){
+      .lc{padding:32px 22px}
+      .sm-g{grid-template-columns:1fr}
+      .ct{padding:62px 10px 16px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="lp" class="lp">
+  <div class="lc">
+    <div class="li">
+      <img src="https://vvcoffice.netlify.app/img/icon.png" alt="VVC" class="logo-img-lg">
+    </div>
+    <h1>VVC বাকি হিসাব</h1>
+    <p class="sub">ব্যবসায়িক বাকি হিসাব নিকাশ সিস্টেম</p>
+    <form id="lf">
+      <div class="fi"><i class="fas fa-user"></i><input type="text" id="uU" placeholder="ইউজারনেম" required></div>
+      <div class="fi"><i class="fas fa-lock"></i><input type="password" id="uP" placeholder="পাসওয়ার্ড" required></div>
+      <button type="submit" class="b bp bf bl" id="loginBtn"><i class="fas fa-sign-in-alt"></i> লগইন</button>
+      <p id="lE" class="er"></p>
+    </form>
+  </div>
+</div>
+
+<!-- App -->
+<div id="mA" class="app h">
+  <nav class="sb" id="sb">
+    <div class="sh">
+      <img src="https://vvcoffice.netlify.app/img/icon.png" alt="VVC" class="logo-img">
+      <span>VVC বাকি হিসাব</span>
+    </div>
+    <ul class="sn">
+      <li class="ac" data-p="n"><i class="fas fa-plus-circle"></i> নতুন তথ্য</li>
+      <li data-p="d"><i class="fas fa-chart-pie"></i> ড্যাশবোর্ড</li>
+      <li data-p="o"><i class="fas fa-building"></i> অফিস ম্যানেজমেন্ট</li>
+      <li data-p="p"><i class="fas fa-box-open"></i> প্রোডাক্ট ম্যানেজমেন্ট</li>
+    </ul>
+    <div class="sf"><button id="lgB" class="b blg"><i class="fas fa-sign-out-alt"></i> লগআউট</button></div>
+  </nav>
+
+  <div class="mh">
+    <button id="mB"><i class="fas fa-bars"></i></button>
+    <span class="mh-center">
+      VVC বাকি হিসাব
+    </span>
+    <button id="mL"><i class="fas fa-sign-out-alt"></i></button>
+  </div>
+  <div id="ov" class="ov h"></div>
+
+  <main class="ct">
+    <!-- New Info -->
+    <div id="pg-n" class="pg ac">
+      <div class="ph"><h2><i class="fas fa-plus-circle"></i> নতুন তথ্য</h2></div>
+      <div class="cd">
+        <label class="lb">অফিস নির্বাচন করুন</label>
+        <select id="oS" class="sl"><option value="">-- অফিস সিলেক্ট করুন --</option></select>
+        <label class="lb">প্রোডাক্ট নির্বাচন করুন</label>
+        <select id="pS" class="sl"><option value="">-- প্রোডাক্ট সিলেক্ট করুন --</option></select>
+        <label class="lb">পরিমাণ</label>
+        <input type="number" id="qI" class="ip" placeholder="কতগুলো?" min="1" value="1">
+        <div class="pv">
+          <div class="pr"><span>একক দাম</span><span id="pp">৳ ০</span></div>
+          <div class="pr"><span>পরিমাণ</span><span id="pq">০</span></div>
+          <div class="pr tt"><span>মোট</span><span id="pt">৳ ০</span></div>
+        </div>
+        <button id="sO" class="b bp bf bl" disabled>
+          <i class="fas fa-paper-plane"></i> সাবমিট করুন
+        </button>
+        <div id="oOk" class="h" style="color:var(--ok);text-align:center;margin-top:12px;font-size:14px;font-weight:600">
+          <i class="fas fa-check-circle"></i> তথ্য সফলভাবে যুক্ত হয়েছে!
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="pg-d" class="pg">
+      <div class="ph"><h2><i class="fas fa-chart-pie"></i> ড্যাশবোর্ড</h2></div>
+      <div class="tbs" id="tbs"></div>
+      <div class="ft">
+        <select id="pF" class="sl">
+          <option value="today">আজকের</option>
+          <option value="week">গত ৭ দিন</option>
+          <option value="month">গত মাস</option>
+          <option value="all">সম্পূর্ণ</option>
+          <option value="custom">কাস্টম তারিখ</option>
+        </select>
+        <div id="cD" class="dr h">
+          <input type="date" id="dF" class="ip"><span>থেকে</span>
+          <input type="date" id="dT" class="ip">
+          <button id="dBtn" class="b b-sm bp">ফিল্টার</button>
+        </div>
+      </div>
+      <div class="sts">
+        <div class="st du"><div class="si"><i class="fas fa-money-bill-wave"></i></div><div><span class="slb">মোট বাকি</span><span class="sv" id="sD">৳ ০</span></div></div>
+        <div class="st or"><div class="si"><i class="fas fa-database"></i></div><div><span class="slb">মোট তথ্য</span><span class="sv" id="sO2">০</span></div></div>
+      </div>
+      <div class="sm-t"><i class="fas fa-box"></i> প্রোডাক্ট সামারি</div>
+      <div class="sm-g" id="sG"></div>
+      <div class="tw">
+        <h3><i class="fas fa-list"></i> তথ্য তালিকা</h3>
+        <div class="ts">
+          <table class="tb2"><thead><tr><th>তারিখ ও সময়</th><th>অফিস</th><th>প্রোডাক্ট</th><th>দাম</th><th>পরিমাণ</th><th>মোট</th><th>অ্যাকশন</th></tr></thead><tbody id="oB"></tbody></table>
+        </div>
+        <div id="nO" class="em h"><i class="fas fa-inbox"></i><p>কোনো তথ্য নেই</p></div>
+      </div>
+    </div>
+
+    <!-- Offices -->
+    <div id="pg-o" class="pg">
+      <div class="ph"><h2><i class="fas fa-building"></i> অফিস ম্যানেজমেন্ট</h2></div>
+      <div class="cd">
+        <h3>নতুন অফিস যুক্ত করুন</h3>
+        <div class="rw">
+          <input type="text" id="nO2" class="ip" placeholder="অফিসের নাম" style="margin-bottom:0">
+          <button id="aOB" class="b bp"><i class="fas fa-plus"></i> যুক্ত করুন</button>
+        </div>
+      </div>
+      <div class="tw">
+        <h3><i class="fas fa-list"></i> অফিস তালিকা</h3>
+        <div class="ts"><table class="tb2"><thead><tr><th>নাম</th><th>তৈরির তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody id="oB2"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div id="pg-p" class="pg">
+      <div class="ph"><h2><i class="fas fa-box-open"></i> প্রোডাক্ট ম্যানেজমেন্ট</h2></div>
+      <div class="cd">
+        <h3>নতুন প্রোডাক্ট যুক্ত করুন</h3>
+        <div class="rw">
+          <input type="text" id="nP" class="ip" placeholder="প্রোডাক্টের নাম" style="margin-bottom:0">
+          <input type="number" id="nPr" class="ip" placeholder="দাম" min="0" step="0.01" style="margin-bottom:0">
+          <button id="aPB" class="b bp"><i class="fas fa-plus"></i> যুক্ত করুন</button>
+        </div>
+      </div>
+      <div class="tw">
+        <h3><i class="fas fa-list"></i> প্রোডাক্ট তালিকা</h3>
+        <div class="ts"><table class="tb2"><thead><tr><th>নাম</th><th>দাম</th><th>তৈরির তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody id="pB"></tbody></table></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div id="mBg" class="mbg h">
+  <div class="md">
+    <div class="mh2"><h3 id="mT">এডিট</h3><button class="mc" id="mCl">&times;</button></div>
+    <div class="mb" id="mBd"></div>
+    <div class="mf"><button class="b bs" id="mCa">বাতিল</button><button class="b bp" id="mSv">সেভ করুন</button></div>
+  </div>
+</div>
+
+<div id="tst" class="tst h"></div>
+<div id="ldr" class="lw h">
+  <div class="lds"><span></span><span></span><span></span></div>
+  <div class="lw-text">লোড হচ্ছে...</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ⚠️ এখানে আপনার Apps Script URL বসান
+// ═══════════════════════════════════════════════════════════════
+var API = 'https://script.google.com/macros/s/AKfycby1QnVK4H6-gRRXG13aB9Bmv0uiemOp6QYC0bNqecfQ9kKnsMq1iRJaGtmTCsWIAzvObA/exec';
+
+var tk = localStorage.getItem('bk_tk');
+var te = parseInt(localStorage.getItem('bk_exp') || '0');
+var offices = [], products = [];
+var selO = null, per = 'today';
+var isSubmitting = false;
+
+function $(id){ return document.getElementById(id); }
+function sh(id){ $(id).classList.remove('h'); }
+function hd(id){ $(id).classList.add('h'); }
+function showLoader(){ sh('ldr'); }
+function hideLoader(){ hd('ldr'); }
+function esc(s){ return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+function toast(m, ok){
+  var t=$('tst');
+  t.innerHTML = '<i class="fas '+(ok?'fa-check-circle':'fa-exclamation-circle')+'"></i> '+m;
+  t.className='tst '+(ok?'ok':'er');
+  sh('tst');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(function(){ hd('tst'); }, 3500);
+}
+
+function btnLoading(btn){ btn.classList.add('loading'); btn.disabled = true; }
+function btnDone(btn){ btn.classList.remove('loading'); btn.disabled = false; }
+
+function api(action, data){
+  data = data || {};
+  return fetch(API, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify(Object.assign({action:action, token:tk}, data)),
+    redirect:'follow'
+  }).then(function(r){ return r.json(); }).then(function(r){
+    if(r.error) throw new Error(r.error);
+    return r;
+  });
+}
+
+// ─── Timestamp Display Helper ─────────────────────────────────
+// Sheet এ যা আছে ঠিক তাই দেখায়, new Date() ব্যবহার করে না
+function fmtDT(s){
+  if(!s) return '';
+  var str = String(s).trim();
+  var datePart, h, mi;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  if(str.indexOf('T') > -1){
+    var clean = str.replace(/Z$/,'').replace(/\+06:00$/,'').replace(/\+\d{2}:\d{2}$/,'');
+    var parts = clean.split('T');
+    datePart = parts[0];
+    var timeParts = (parts[1]||'00:00').split(':');
+    h = parseInt(timeParts[0])||0;
+    mi = timeParts[1]||'00';
+  } else {
+    datePart = str; h=0; mi='00';
+  }
+
+  var dp = datePart.split('-');
+  var ampm = h>=12?'PM':'AM';
+  var h12 = h%12||12;
+  return months[parseInt(dp[1])-1]+' '+parseInt(dp[2])+', '+dp[0]+' '+h12+':'+mi+' '+ampm;
+}
+
+// ─── Auth ─────────────────────────────────────────────────────
+function valid(){
+  if(!tk) return false;
+  if(Date.now()>te){ doLogout(); return false; }
+  return true;
+}
+
+$('lf').addEventListener('submit', function(e){
+  e.preventDefault();
+  $('lE').textContent='';
+  var btn = $('loginBtn');
+  btnLoading(btn);
+  api('login',{username:$('uU').value.trim(), password:$('uP').value})
+  .then(function(r){
+    btnDone(btn);
+    if(r.success){
+      tk=r.token; te=Date.now()+24*3600*1000;
+      localStorage.setItem('bk_tk',tk);
+      localStorage.setItem('bk_exp',te.toString());
+      enter();
+    } else { $('lE').textContent=r.error||'লগইন ব্যর্থ'; }
+  }).catch(function(e){ btnDone(btn); $('lE').textContent=e.message; });
+});
+
+function doLogout(){
+  tk=null; te=0;
+  localStorage.removeItem('bk_tk');
+  localStorage.removeItem('bk_exp');
+  sh('lp'); hd('mA');
+}
+
+$('lgB').addEventListener('click', doLogout);
+$('mL').addEventListener('click', doLogout);
+
+function enter(){ hd('lp'); sh('mA'); loadOff(); loadProd(); }
+if(valid()) enter();
+
+// ─── Navigation ───────────────────────────────────────────────
+document.querySelectorAll('.sn li').forEach(function(li){
+  li.addEventListener('click', function(){
+    var p = li.getAttribute('data-p');
+    var currentPg = document.querySelector('.pg.ac');
+    var targetPg = $('pg-'+p);
+    if(currentPg === targetPg) return;
+
+    showLoader();
+    document.querySelectorAll('.sn li').forEach(function(i){ i.classList.remove('ac'); });
+    li.classList.add('ac');
+    document.querySelectorAll('.pg').forEach(function(x){ x.classList.remove('ac'); });
+    targetPg.classList.add('ac');
+
+    $('sb').classList.remove('op');
+    sh('ov'); hd('ov');
+
+    var loadPromise;
+    if(p==='d') loadPromise = loadDash();
+    else if(p==='o') loadPromise = renderOff();
+    else if(p==='p') loadPromise = renderProd();
+    else loadPromise = Promise.resolve();
+
+    loadPromise.then(function(){ setTimeout(hideLoader, 300); }).catch(hideLoader);
+  });
+});
+
+$('mB').addEventListener('click', function(){ $('sb').classList.toggle('op'); $('ov').classList.toggle('h'); });
+$('ov').addEventListener('click', function(){ $('sb').classList.remove('op'); hd('ov'); });
+
+// ─── Load Data ────────────────────────────────────────────────
+function loadOff(){
+  return api('getOffices').then(function(r){
+    if(r.success){
+      offices=r.data||[];
+      var s=$('oS');
+      s.innerHTML='<option value="">-- অফিস সিলেক্ট করুন --</option>';
+      offices.forEach(function(o){ s.innerHTML+='<option value="'+o.id+'">'+esc(o.name)+'</option>'; });
+    }
+  }).catch(function(e){ console.error(e); });
+}
+
+function loadProd(){
+  return api('getProducts').then(function(r){
+    if(r.success){
+      products=r.data||[];
+      var s=$('pS');
+      s.innerHTML='<option value="">-- প্রোডাক্ট সিলেক্ট করুন --</option>';
+      products.forEach(function(p){ s.innerHTML+='<option value="'+p.id+'" data-price="'+p.price+'">'+esc(p.name)+' — ৳'+p.price+'</option>'; });
+    }
+  }).catch(function(e){ console.error(e); });
+}
+
+// ─── New Info Form ────────────────────────────────────────────
+$('oS').addEventListener('change', function(){ this.classList.toggle('has-val', !!this.value); updPv(); checkForm(); });
+$('pS').addEventListener('change', function(){ this.classList.toggle('has-val', !!this.value); updPv(); checkForm(); });
+$('qI').addEventListener('input', function(){ updPv(); checkForm(); });
+
+function updPv(){
+  var opt=$('pS').options[$('pS').selectedIndex];
+  var price=parseFloat(opt?opt.getAttribute('data-price'):0)||0;
+  var qty=parseInt($('qI').value)||0;
+  $('pp').textContent='৳ '+price.toLocaleString();
+  $('pq').textContent=qty;
+  $('pt').textContent='৳ '+(price*qty).toLocaleString();
+}
+
+function checkForm(){
+  var oOk = !!$('oS').value;
+  var pOk = !!$('pS').value;
+  var qOk = $('qI').value && parseInt($('qI').value) >= 1;
+  $('sO').disabled = !(oOk && pOk && qOk);
+}
+
+$('sO').addEventListener('click', function(){
+  if(isSubmitting) return toast('অনুগ্রহ করে অপেক্ষা করুন...', false);
+
+  var oId=$('oS').value, pId=$('pS').value, qty=$('qI').value;
+  if(!oId) return toast('অফিস নির্বাচন করুন', false);
+  if(!pId) return toast('প্রোডাক্ট নির্বাচন করুন', false);
+  if(!qty||qty<1) return toast('পরিমাণ দিন', false);
+
+  isSubmitting = true;
+  var btn = $('sO');
+  btnLoading(btn);
+
+  api('addData',{office_id:oId, product_id:pId, quantity:parseInt(qty)})
+  .then(function(){
+    isSubmitting = false;
+    btnDone(btn);
+    toast('তথ্য সফলভাবে যুক্ত হয়েছে!', true);
+    sh('oOk'); setTimeout(function(){ hd('oOk'); }, 3000);
+    $('oS').value=''; $('pS').value=''; $('qI').value=1;
+    $('oS').classList.remove('has-val');
+    $('pS').classList.remove('has-val');
+    updPv(); checkForm();
+    loadOff(); loadProd();
+  }).catch(function(e){
+    isSubmitting = false;
+    btnDone(btn);
+    toast(e.message, false);
+  });
+});
+
+// ─── Dashboard ────────────────────────────────────────────────
+function loadDash(){
+  return loadOff().then(function(){
+    renderTabs();
+    if(offices.length && !selO) selO = offices[0].id;
+    if(selO) return loadItems();
+  });
+}
+
+function renderTabs(){
+  var c=$('tbs'); c.innerHTML='';
+  offices.forEach(function(o){
+    var b=document.createElement('button');
+    b.className='tb'+(o.id===selO?' ac':'');
+    b.textContent=o.name;
+    b.onclick=function(){
+      selO=o.id;
+      document.querySelectorAll('.tb').forEach(function(t){ t.classList.remove('ac'); });
+      b.classList.add('ac');
+      showLoader();
+      loadItems().then(function(){ setTimeout(hideLoader, 200); }).catch(hideLoader);
+    };
+    c.appendChild(b);
+  });
+}
+
+$('pF').addEventListener('change', function(e){
+  per=e.target.value;
+  $('cD').classList.toggle('h',per!=='custom');
+  if(per!=='custom'){
+    showLoader();
+    loadItems().then(function(){ setTimeout(hideLoader, 200); }).catch(hideLoader);
+  }
+});
+$('dBtn').addEventListener('click', function(){
+  showLoader();
+  loadItems().then(function(){ setTimeout(hideLoader, 200); }).catch(hideLoader);
+});
+
+// ─── Date helper (BD timezone) ────────────────────────────────
+function fmtD(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function loadItems(){
+  if(!selO) return Promise.resolve();
+  var params={office_id:selO};
+  var now=new Date();
+
+  if(per==='today'){
+    params.from=fmtD(now);
+    params.to=fmtD(now);
+  } else if(per==='week'){
+    var w=new Date(now); w.setDate(w.getDate()-7);
+    params.from=fmtD(w);
+    params.to=fmtD(now);
+  } else if(per==='month'){
+    var m=new Date(now); m.setMonth(m.getMonth()-1);
+    params.from=fmtD(m);
+    params.to=fmtD(now);
+  } else if(per==='custom'){
+    params.from=$('dF').value;
+    params.to=$('dT').value;
+  }
+
+  return api('getData',params)
+  .then(function(r){
+    if(!r.success) return;
+    var items=r.data||[];
+    var total=items.reduce(function(s,o){ return s+parseFloat(o.total||0); },0);
+    $('sD').textContent='৳ '+total.toLocaleString();
+    $('sO2').textContent=items.length;
+
+    var pm={};
+    items.forEach(function(o){
+      if(!pm[o.product_name]) pm[o.product_name]={q:0,t:0};
+      pm[o.product_name].q+=parseInt(o.quantity||0);
+      pm[o.product_name].t+=parseFloat(o.total||0);
+    });
+    var sg=$('sG'); sg.innerHTML='';
+    Object.keys(pm).forEach(function(n){
+      var d=pm[n];
+      sg.innerHTML+='<div class="sm-c"><div class="sn2">'+esc(n)+'</div><div class="sd2"><span>'+d.q+' টি</span><span class="am">৳ '+d.t.toLocaleString()+'</span></div></div>';
+    });
+
+    var tb=$('oB'); tb.innerHTML='';
+    if(!items.length){
+      sh('nO');
+      document.querySelector('#pg-d .ts').classList.add('h');
+    } else {
+      hd('nO');
+      document.querySelector('#pg-d .ts').classList.remove('h');
+      items.sort(function(a,b){ return String(b.created_at).localeCompare(String(a.created_at)); });
+      items.forEach(function(o){
+        var ds = fmtDT(o.created_at);
+        tb.innerHTML+='<tr>'
+          +'<td>'+ds+'</td>'
+          +'<td><span class="off-badge">'+esc(o.office_name)+'</span></td>'
+          +'<td>'+esc(o.product_name)+'</td>'
+          +'<td>৳ '+parseFloat(o.product_price).toLocaleString()+'</td>'
+          +'<td>'+o.quantity+'</td>'
+          +'<td><strong>৳ '+parseFloat(o.total).toLocaleString()+'</strong></td>'
+          +'<td class="ac2">'
+            +'<button class="b b-sm bp" onclick="editItem(\''+o.id+'\')"><i class="fas fa-edit"></i></button>'
+            +'<button class="b b-sm bd" onclick="delItem(\''+o.id+'\')"><i class="fas fa-trash"></i></button>'
+          +'</td></tr>';
+      });
+    }
+  });
+}
+
+// ─── Edit/Delete ──────────────────────────────────────────────
+function editItem(id){
+  showLoader();
+  api('getData',{office_id:selO}).then(function(r){
+    hideLoader();
+    var o=(r.data||[]).find(function(x){ return x.id===id; });
+    if(!o) return toast('তথ্য পাওয়া যায়নি', false);
+    openMdl('তথ্য এডিট',
+      '<label class="lb">প্রোডাক্টের নাম</label><input class="ip" id="eNm" value="'+esc(o.product_name)+'">'+
+      '<label class="lb">দাম</label><input class="ip" type="number" id="ePr" value="'+o.product_price+'" min="0" step="0.01">'+
+      '<label class="lb">পরিমাণ</label><input class="ip" type="number" id="eQt" value="'+o.quantity+'" min="1">');
+    $('mSv').onclick=function(){
+      btnLoading($('mSv'));
+      api('updateData',{id:id,product_name:$('eNm').value,product_price:$('ePr').value,quantity:$('eQt').value})
+      .then(function(){ btnDone($('mSv')); closeMdl(); toast('আপডেট হয়েছে', true); loadItems(); })
+      .catch(function(e){ btnDone($('mSv')); toast(e.message, false); });
+    };
+  }).catch(function(e){ hideLoader(); toast(e.message, false); });
+}
+
+function delItem(id){
+  if(!confirm('ডিলিট করতে চান?')) return;
+  showLoader();
+  api('deleteData',{id:id})
+  .then(function(){ hideLoader(); toast('ডিলিট হয়েছে', true); loadItems(); })
+  .catch(function(e){ hideLoader(); toast(e.message, false); });
+}
+
+// ─── Offices ──────────────────────────────────────────────────
+function renderOff(){
+  return api('getOffices').then(function(r){
+    if(r.success){
+      offices=r.data||[];
+      var tb=$('oB2'); tb.innerHTML='';
+      offices.forEach(function(o){
+        var d = fmtDT(o.created_at);
+        tb.innerHTML+='<tr><td>'+esc(o.name)+'</td><td>'+d+'</td><td class="ac2"><button class="b b-sm bp" onclick="editOff(\''+o.id+'\',\''+esc(o.name)+'\')"><i class="fas fa-edit"></i></button><button class="b b-sm bd" onclick="delOff(\''+o.id+'\')"><i class="fas fa-trash"></i></button></td></tr>';
+      });
+    }
+  }).catch(function(e){ toast(e.message, false); });
+}
+
+$('aOB').addEventListener('click', function(){
+  var n=$('nO2').value.trim();
+  if(!n) return toast('অফিসের নাম দিন', false);
+  var btn = this;
+  btnLoading(btn);
+  api('addOffice',{name:n})
+  .then(function(){ btnDone(btn); $('nO2').value=''; toast('যুক্ত হয়েছে', true); renderOff(); loadOff(); })
+  .catch(function(e){ btnDone(btn); toast(e.message, false); });
+});
+
+function editOff(id,name){
+  openMdl('অফিস এডিট','<label class="lb">নাম</label><input class="ip" id="eOf" value="'+name+'">');
+  $('mSv').onclick=function(){
+    btnLoading($('mSv'));
+    api('updateOffice',{id:id,name:$('eOf').value})
+    .then(function(){ btnDone($('mSv')); closeMdl(); toast('আপডেট হয়েছে', true); renderOff(); loadOff(); })
+    .catch(function(e){ btnDone($('mSv')); toast(e.message, false); });
+  };
+}
+
+function delOff(id){
+  if(!confirm('ডিলিট করতে চান?')) return;
+  showLoader();
+  api('deleteOffice',{id:id})
+  .then(function(){ hideLoader(); toast('ডিলিট হয়েছে', true); renderOff(); loadOff(); })
+  .catch(function(e){ hideLoader(); toast(e.message, false); });
+}
+
+// ─── Products ─────────────────────────────────────────────────
+function renderProd(){
+  return api('getProducts').then(function(r){
+    if(r.success){
+      products=r.data||[];
+      var tb=$('pB'); tb.innerHTML='';
+      products.forEach(function(p){
+        var d = fmtDT(p.created_at);
+        tb.innerHTML+='<tr><td>'+esc(p.name)+'</td><td>৳ '+parseFloat(p.price).toLocaleString()+'</td><td>'+d+'</td><td class="ac2"><button class="b b-sm bp" onclick="editProd(\''+p.id+'\',\''+esc(p.name)+'\',\''+p.price+'\')"><i class="fas fa-edit"></i></button><button class="b b-sm bd" onclick="delProd(\''+p.id+'\')"><i class="fas fa-trash"></i></button></td></tr>';
+      });
+    }
+  }).catch(function(e){ toast(e.message, false); });
+}
+
+$('aPB').addEventListener('click', function(){
+  var n=$('nP').value.trim(), p=$('nPr').value;
+  if(!n||!p) return toast('নাম ও দাম দিন', false);
+  var btn = this;
+  btnLoading(btn);
+  api('addProduct',{name:n,price:p})
+  .then(function(){ btnDone(btn); $('nP').value=''; $('nPr').value=''; toast('যুক্ত হয়েছে', true); renderProd(); loadProd(); })
+  .catch(function(e){ btnDone(btn); toast(e.message, false); });
+});
+
+function editProd(id,name,price){
+  openMdl('প্রোডাক্ট এডিট','<label class="lb">নাম</label><input class="ip" id="ePn" value="'+name+'"><label class="lb">দাম</label><input class="ip" type="number" id="ePp" value="'+price+'" min="0" step="0.01">');
+  $('mSv').onclick=function(){
+    btnLoading($('mSv'));
+    api('updateProduct',{id:id,name:$('ePn').value,price:$('ePp').value})
+    .then(function(){ btnDone($('mSv')); closeMdl(); toast('আপডেট হয়েছে', true); renderProd(); loadProd(); })
+    .catch(function(e){ btnDone($('mSv')); toast(e.message, false); });
+  };
+}
+
+function delProd(id){
+  if(!confirm('ডিলিট করতে চান?')) return;
+  showLoader();
+  api('deleteProduct',{id:id})
+  .then(function(){ hideLoader(); toast('ডিলিট হয়েছে', true); renderProd(); loadProd(); })
+  .catch(function(e){ hideLoader(); toast(e.message, false); });
+}
+
+// ─── Modal ────────────────────────────────────────────────────
+function openMdl(t,b){ $('mT').textContent=t; $('mBd').innerHTML=b; sh('mBg'); }
+function closeMdl(){ hd('mBg'); }
+$('mCl').addEventListener('click', closeMdl);
+$('mCa').addEventListener('click', closeMdl);
+$('mBg').addEventListener('click', function(e){ if(e.target===$('mBg')) closeMdl(); });
+</script>
+</body>
+</html>
